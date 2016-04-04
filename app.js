@@ -9,6 +9,11 @@ server.listen(port, function () {
   console.log('Server listening at port %d', port);
 });
 
+app.use(express.basicAuth(function(user, pass){
+  console.log("BASIC");
+   return 'nullshit' == user && process.env.AUTH_PASS == pass;
+}));
+
 // Routing
 app.use(express.static(__dirname + '/public'));
 
@@ -18,17 +23,39 @@ app.get('/loadtest', function(req, res){
   setTimeout(()=>res.send('hello world'),Math.random()*5000+500);
 });
 
-// Chatroom
+var push=io.of('/push');
+push.on('connection',function(socket){
+  // setTimeout(()=>socket.emit("push",{message:welcomeMsg[Math.floor(Math.random()*welcomeMsg.length)]}),10000);
+});
 
+setInterval(()=>{
+  io.emit('new message',{
+      username: 'SYSTEM',
+      message: 'online '+Object.keys(push.connected).length+' user(s)'
+    });
+},30000);
+
+// Chatroom
+var welcomeMsg = [
+  "ข้อ 3 เทสเคสผิดนะครับ",
+  "กรุณาอย่าสแปมนะครับ ตัวตรวจทำงานหนักมากเลยครับ",
+  "เฮือกครับ ผมยังเจนเคสไม่เสร็จเลย",
+  "GG EZ",
+  "เคสพึ่งเจนเมื่อคืนขอภัยในความไม่สะดวกด้วยครับ",
+  "เดี๋ยวอีกสักครู่จะมีการ restart เครื่องนะครับ ไม่ต้องตกใจ",
+  "หลังจากการหายไปของ  CodeCube beta เราก็ได้กลับมาอีกครั้ง",
+  "ยินดีด้วย คุณคือผู้ได้รับเลือกให้เป็น CodeCube master",
+  "ทางเราได้ขยายเวลาในการรับสมัครออกไปอีก 3 วันนะครับ",
+  "bullshit!!!",
+  "หากผิดพลาดประการใดทางเราต้องขออภัยด้วยครับ"];
 var numUsers = 0;
 
 io.on('connection', function (socket) {
   var addedUser = false;
-
   // when the client emits 'new message', this listens and executes
   socket.on('new message', function (data) {
     // we tell the client to execute 'new message'
-    socket.broadcast.emit("push",{message:data});
+    push.emit("push",{message:data});
     socket.broadcast.emit('new message', {
       username: socket.username,
       message: data
